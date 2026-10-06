@@ -209,6 +209,14 @@ details[open] > summary { margin-bottom: 10px; }
   </header>
 
   <div id="dbNotice" class="notice warn" hidden style="margin-bottom:16px"></div>
+  <div id="localBar" class="notice row spread" hidden style="margin-bottom:16px">
+    <span>Deine Daten werden nur in diesem Browser gespeichert. Für Kalender, Gmail, Notion und den Jarvis-Chat öffne die <a href="https://claude.ai/artifact/WUF8y1CoqbaiANbhBpCfbv" target="_blank" rel="noopener">claude.ai-Version</a>.</span>
+    <span class="row" style="gap:6px">
+      <button class="btn" id="exportBtn" type="button">Export (JSON)</button>
+      <label class="btn" for="importIn" style="cursor:pointer">Import</label>
+      <input type="file" id="importIn" accept="application/json,.json" hidden>
+    </span>
+  </div>
 
   <nav class="tabs" role="tablist" aria-label="Bereiche">
     <button class="tab" role="tab" data-tab="heute" aria-selected="true">Heute</button>
@@ -527,6 +535,7 @@ details[open] > summary { margin-bottom: 10px; }
   const wdIdx = (d) => (d.getDay() + 6) % 7;
   const STAGES = [["idea", "Idee"], ["script", "Script"], ["filmed", "Gedreht"], ["posted", "Gepostet"]];
 
+  const CLAUDE_URL = "https://claude.ai/artifact/WUF8y1CoqbaiANbhBpCfbv";
   const NOW = new Date();
   const TODAY = dkey(NOW);
   const MONTH = mkey(NOW);
@@ -635,6 +644,7 @@ details[open] > summary { margin-bottom: 10px; }
   function connectorState(key, server) {
     const st = S[key];
     if (st.status === "loading") return `<p class="empty">Lade ${esc(server)} …</p>`;
+    if (st.status === "local") return `<p class="notice">${esc(server)} gibt es in der <a href="${CLAUDE_URL}" target="_blank" rel="noopener">claude.ai-Version</a> von Jarvis.</p>`;
     if (st.status === "unavailable") return `<p class="notice">Live-Daten aus ${esc(server)} erscheinen, wenn du das Dashboard auf claude.ai öffnest.</p>`;
     if (st.status === "error" || st.status === "stale") {
       const c = mcpErrCopy(st.error || {}, server);
@@ -683,7 +693,7 @@ details[open] > summary { margin-bottom: 10px; }
     $("#habitCount").className = "pill num " + (done === hs.length && hs.length ? "good" : "");
     $("#habitList").innerHTML = hs.length ? hs.map((h) => {
       const on = habitDone(TODAY, h.id), st = streak(h.id);
-      return `<label class="habit ${on ? "done" : ""}"><input type="checkbox" data-habit="${esc(h.id)}" ${on ? "checked" : ""}><span class="grow h-label">${esc(h.label)}</span><span class="streak ${st >= 3 ? "hot" : ""}">${st ? st + " Tage" : ""}</span></label>`;
+      return `<label class="habit ${on ? "done" : ""}"><input type="checkbox" data-habit="${esc(h.id)}" ${on ? "checked" : ""}><span class="grow h-label">${esc(h.label)}</span><span class="streak ${st >= 3 ? "hot" : ""}">${st ? st + (st === 1 ? " Tag" : " Tage") : ""}</span></label>`;
     }).join("") : `<p class="empty">Noch keine Habits. Lege sie im Tab „Ziele &amp; Habits“ an.</p>`;
 
     // priorities
@@ -738,7 +748,7 @@ details[open] > summary { margin-bottom: 10px; }
       const st = streak(h.id);
       let best = 0, cur = 0;
       for (let i = 55; i >= 0; i--) { if (habitDone(dkey(addDays(NOW, -i)), h.id)) { cur++; best = Math.max(best, cur); } else cur = 0; }
-      return `<li><span class="grow">${esc(h.label)}</span><span class="streak ${st >= 3 ? "hot" : ""}">${st} Tage</span><span class="small muted num">Rekord ${best}</span></li>`;
+      return `<li><span class="grow">${esc(h.label)}</span><span class="streak ${st >= 3 ? "hot" : ""}">${st} ${st === 1 ? "Tag" : "Tage"}</span><span class="small muted num">Rekord ${best}</span></li>`;
     }).join("") : `<li class="empty">Keine Habits angelegt.</li>`;
   }
 
@@ -993,6 +1003,20 @@ details[open] > summary { margin-bottom: 10px; }
   $("#contentForm").addEventListener("submit", (e) => { e.preventDefault(); const id = uid(), body = { title: $("#cTitle").value.trim(), platform: $("#cPlatform").value, due: $("#cDue").value || null, stage: "idea", created: TODAY }; if (!body.title) return; S.content.push({ id, ...body }); render(); saveDoc("content/" + id, body, 0); $("#cTitle").value = ""; $("#cDue").value = ""; });
   $("#notionForm").addEventListener("submit", (e) => { e.preventDefault(); const q = $("#notionQ").value.trim() || "Content"; patchConfig((c) => { c.notionQuery = q; }); watchNotion(); });
 
+  $("#exportBtn").addEventListener("click", () => {
+    if (!S.db || !S.db.local) return;
+    const blob = new Blob([S.db.exportAll()], { type: "application/json" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `jarvis-backup-${TODAY}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast("Backup heruntergeladen");
+  });
+  $("#importIn").addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0]; if (!f || !S.db || !S.db.local) return;
+    const r = new FileReader();
+    r.onload = () => { try { S.db.importAll(String(r.result)); toast("Backup importiert"); } catch (err) { toast("Die Datei ist kein Jarvis-Backup. Wähle eine Datei, die mit „Export“ erstellt wurde."); } e.target.value = ""; };
+    r.readAsText(f);
+  });
+
   // ---------- Jarvis (sample) ----------
   function context() {
     const d = day(TODAY), w = weekStats(), { exp, inc, saldo } = monthTotals();
@@ -1141,24 +1165,59 @@ details[open] > summary { margin-bottom: 10px; }
     const n = $("#dbNotice"); n.hidden = false;
     n.textContent = e && e.code === "revoked" ? "Der Zugriff auf deine gespeicherten Daten wurde beendet. Lade die Seite neu." : "Deine gespeicherten Daten konnten nicht geladen werden. Lade die Seite neu.";
   }
+  // ---------- local mode (outside claude.ai): browser storage with the same API subset ----------
+  const LS_KEY = "jarvis.v1";
+  function localDb() {
+    let store = {}, persistent = true;
+    try { store = JSON.parse(localStorage.getItem(LS_KEY) || "{}") || {}; } catch (e) { persistent = false; }
+    const listeners = new Set();
+    const persist = () => { try { localStorage.setItem(LS_KEY, JSON.stringify(store)); } catch (e) { persistent = false; } };
+    const notify = () => queueMicrotask(() => listeners.forEach((fn) => fn()));
+    const docSnap = (path) => ({ id: path.split("/").pop(), exists: path in store, data: () => store[path], metadata: { fromCache: false, hasPendingWrites: false } });
+    const inColl = (coll) => Object.keys(store).filter((p) => p.startsWith(coll + "/") && p.split("/").length === coll.split("/").length + 1);
+    const query = (coll, filters) => ({
+      where: (f, op, v) => query(coll, [...filters, [f, op, v]]),
+      onSnapshot(next) {
+        const run = () => {
+          const docs = inColl(coll).sort().map(docSnap).filter((d) => filters.every(([f, op, v]) => { const x = (d.data() || {})[f]; return op === ">=" ? x >= v : op === "==" ? x === v : true; }));
+          next({ docs, size: docs.length, empty: !docs.length, docChanges: () => [], metadata: { fromCache: false, hasPendingWrites: false } });
+        };
+        listeners.add(run); queueMicrotask(run); return () => listeners.delete(run);
+      },
+    });
+    return {
+      local: true,
+      isPersistent: () => persistent,
+      exportAll: () => JSON.stringify({ app: "jarvis", version: 1, exported: new Date().toISOString(), data: store }, null, 2),
+      importAll(json) { const o = JSON.parse(json); const data = o && o.data; if (!data || typeof data !== "object") throw new Error("format"); store = data; persist(); notify(); },
+      doc: (path) => ({
+        async set(body) { store[path] = JSON.parse(JSON.stringify(body)); persist(); notify(); },
+        async delete() { delete store[path]; persist(); notify(); },
+        async get() { return docSnap(path); },
+        onSnapshot(next) { const run = () => next(docSnap(path)); listeners.add(run); queueMicrotask(run); return () => listeners.delete(run); },
+      }),
+      collection: (path) => query(path, []),
+    };
+  }
+  function enterLocalMode() {
+    S.local = true;
+    S.cal = { status: "local", items: [] }; S.mail = { status: "local", items: [] }; S.notion = { status: "local", items: [] };
+    S.db = localDb(); subscribeAll(S.db);
+    $("#fab").hidden = true;
+    $("#localBar").hidden = false;
+    if (!S.db.isPersistent()) { const n = $("#dbNotice"); n.hidden = false; n.textContent = "Dein Browser blockiert den Speicher (z. B. privates Fenster). Änderungen gehen beim Neuladen verloren."; }
+    render();
+  }
   async function initDb() {
     const db = await claude.use("db");
-    if (!db) {
-      const n = $("#dbNotice"); n.hidden = false;
-      n.textContent = "Speichern ist hier nicht verfügbar. Öffne Jarvis angemeldet auf claude.ai, damit deine Einträge gespeichert werden. Bis dahin gehen Änderungen beim Neuladen verloren.";
-      return;
-    }
+    if (!db) { enterLocalMode(); return; }
     S.db = db; subscribeAll(db);
   }
   async function initSample() { S.sample = await claude.use("sample"); render(); }
 
   render();
   if (window.claude && typeof window.claude.use === "function") {
-    initDb(); initMcp(); initSample();
-  } else {
-    S.cal = { status: "unavailable", items: [] }; S.mail = { status: "unavailable", items: [] }; S.notion = { status: "unavailable", items: [] };
-    const n = $("#dbNotice"); n.hidden = false; n.textContent = "Vorschau ohne Speicher: Öffne Jarvis auf claude.ai, damit Daten gespeichert und Kalender, Gmail und Notion geladen werden.";
-    render();
-  }
+    initDb().then(() => { if (!S.local) { initMcp(); initSample(); } });
+  } else enterLocalMode();
 })();
 </script>

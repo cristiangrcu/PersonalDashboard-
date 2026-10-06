@@ -23,6 +23,16 @@ Live: https://claude.ai/artifact/WUF8y1CoqbaiANbhBpCfbv (privat, nur für den Be
 
 `config/main`, `days/<YYYY-MM-DD>`, `plan/week`, `months/<YYYY-MM>`, `goals/*`, `subscriptions/*`, `investments/*`, `exams/*`, `schedule/*`, `content/*`, `reviews/<YYYY-Www>`
 
+## Vercel-Version
+
+Die gleiche `index.html` läuft auch auf Vercel. Dort gibt es keine claude.ai-Laufzeit, deshalb schaltet die Seite in den **lokalen Modus**:
+
+- Daten werden im Browser gespeichert (localStorage, Schlüssel `jarvis.v1`), jedes Gerät hat seine eigenen Daten.
+- Mit **Export (JSON)** und **Import** überträgst du Daten zwischen Geräten oder sicherst sie.
+- Kalender, Gmail, Notion und der Jarvis-Chat gibt es nur in der claude.ai-Version.
+
+Build: `npm run build` schreibt `dist/index.html` (die Seite mit vollständigem HTML-Gerüst). Konfiguration in `vercel.json`.
+
 ## Aktualisieren
 
 `index.html` bearbeiten und über Claude Code mit dem Artifact-Tool erneut auf dieselbe URL veröffentlichen. Die gespeicherten Daten bleiben dabei erhalten.
