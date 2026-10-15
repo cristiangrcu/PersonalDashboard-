@@ -224,6 +224,50 @@ button.msg-head { cursor: pointer; }
 .msg-snip { font-size: .88rem; color: var(--muted); margin-left: 48px; overflow-wrap: anywhere; }
 .skel { height: 12px; border-radius: 6px; background: var(--surface-2); margin: 8px 0 0 48px; }
 body.noscroll { overflow: hidden; }
+#rdOpen .sh { display: none; }
+@media (max-width: 640px) { #rdOpen .sh { display: inline; } #rdOpen .lg { display: none; } }
+/* Window cards (Kalender, Gmail, Notion) */
+.s4w { grid-column: span 4; }
+@media (max-width: 1100px) { .s4w { grid-column: span 6; } .s4w.wide-mid { grid-column: span 12; } }
+@media (max-width: 820px) { .s4w { grid-column: span 12; } }
+.cal-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal-day { background: none; border: 1px solid transparent; border-radius: 10px; padding: 6px 0 5px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px; color: var(--ink); font: inherit; min-width: 0; }
+.cal-day:hover { background: var(--surface-2); }
+.cal-day .wd { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.cal-day .dn { font-family: var(--font-data); font-size: .95rem; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; }
+.cal-day.today .dn { background: var(--accent); color: var(--accent-ink); }
+.cal-day.sel { border-color: var(--line); background: var(--surface-2); }
+.cal-dots { display: flex; gap: 2px; height: 5px; }
+.cal-dots i { width: 4px; height: 4px; border-radius: 50%; background: var(--muted); }
+.cal-dayhead { font-size: .8rem; color: var(--muted); }
+.ev-list { display: flex; flex-direction: column; gap: 6px; }
+.ev { display: grid; grid-template-columns: 4px minmax(0, 1fr) auto; gap: 10px; align-items: stretch; text-align: left; width: 100%; background: var(--surface-2); border: 0; border-radius: 10px; padding: 9px 10px 9px 0; cursor: pointer; color: var(--ink); font: inherit; overflow: hidden; }
+.ev:hover { filter: brightness(.97); }
+.ev .bar-c { border-radius: 0 3px 3px 0; }
+.ev .ev-main { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ev .ev-title { font-weight: 600; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev .ev-sub { font-size: .8rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev .ev-side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: .78rem; color: var(--muted); }
+.ev.past { opacity: .55; }
+.nicon { width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; font-size: 1.25rem; background: var(--surface-2); flex: none; }
+.ev-detail { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px 14px; align-items: start; }
+@media (max-width: 640px) { .ev-detail { grid-template-columns: minmax(0, 1fr); gap: 4px; } .ev-detail dd { margin-bottom: 10px; } }
+.ev-detail dt { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding-top: 3px; }
+.ev-detail dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.ev-detail .msg-body { margin-left: 0; }
+.att { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.md { font-size: .95rem; line-height: 1.6; max-width: 72ch; overflow-wrap: anywhere; }
+.md > * { margin: 0 0 10px; }
+.md h1, .md h2, .md h3 { margin: 18px 0 8px; line-height: 1.3; }
+.md h1 { font-size: 1.25rem; } .md h2 { font-size: 1.1rem; } .md h3 { font-size: 1rem; }
+.md ul, .md ol { padding-left: 22px; }
+.md li { margin: 2px 0; }
+.md li.task { list-style: none; margin-left: -22px; display: flex; gap: 8px; }
+.md blockquote { border-left: 3px solid var(--line); padding: 2px 0 2px 12px; color: var(--muted); }
+.md hr { border: 0; border-top: 1px solid var(--line); }
+.md code { font-family: var(--font-data); font-size: .85em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+.md .chip-link { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; text-decoration: none; color: var(--ink); background: var(--surface-2); margin: 2px 4px 2px 0; font-size: .88rem; }
+.md .chip-link::before { content: ""; width: 10px; height: 10px; border-radius: 2px; background: var(--accent); }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 9px 14px; border-radius: 8px; font-size: .88rem; z-index: 40; max-width: calc(100vw - 32px); }
 @media (prefers-reduced-motion: no-preference) { .bar > span { transition: width .4s ease; } }
 </style>
@@ -288,14 +332,19 @@ body.noscroll { overflow: hidden; }
         </form>
       </div>
 
-      <div class="card s7">
-        <div class="card-head"><h2>Termine</h2><span class="small muted">Google Calendar · nächste 7 Tage</span></div>
+      <div class="card s4w">
+        <div class="card-head"><div class="row" style="gap:8px"><h2>Kalender</h2><span class="pill num" id="calCount" hidden></span></div><a class="small" href="https://calendar.google.com/calendar/u/0/r/week" target="_blank" rel="noopener">Kalender öffnen</a></div>
         <div id="calBox"></div>
       </div>
 
-      <div class="card s5">
+      <div class="card s4w">
         <div class="card-head"><div class="row" style="gap:8px"><h2>Gmail</h2><span class="pill accent num" id="mailUnread" hidden></span></div><a class="small" href="https://mail.google.com/mail/u/0/#inbox" target="_blank" rel="noopener">Posteingang öffnen</a></div>
         <div id="mailBox"></div>
+      </div>
+
+      <div class="card s4w wide-mid">
+        <div class="card-head"><div class="row" style="gap:8px"><h2>Notion</h2><span class="small muted">zuletzt angesehen</span></div><a class="small" href="https://www.notion.so" target="_blank" rel="noopener">Notion öffnen</a></div>
+        <div id="notionBox"></div>
       </div>
     </div>
   </section>
@@ -507,14 +556,6 @@ body.noscroll { overflow: hidden; }
         </form>
       </div>
 
-      <div class="card s12">
-        <div class="card-head"><h2>Notion</h2><span class="small muted" id="notionLabel"></span></div>
-        <div id="notionBox"></div>
-        <form class="form" id="notionForm">
-          <input type="text" id="notionQ" placeholder="Suchbegriff, z. B. Content" aria-label="Notion-Suchbegriff">
-          <button class="btn" type="submit">Suchbegriff speichern</button>
-        </form>
-      </div>
     </div>
   </section>
 
@@ -615,6 +656,7 @@ body.noscroll { overflow: hidden; }
     config: structuredClone(DEFAULT_CONFIG),
     days: {}, goals: [], plan: {}, month: { month: MONTH, expenses: [], income: [] },
     subs: [], invest: [], exams: [], schedule: [], content: [], reviews: [],
+    calDay: (() => { try { return sessionStorage.getItem("jarvis.calDay") || null; } catch (e) { return null; } })(),
     cal: { status: "loading", items: [] }, mail: { status: "loading", items: [] }, notion: { status: "loading", items: [] },
   };
 
@@ -756,15 +798,35 @@ body.noscroll { overflow: hidden; }
     // calendar
     const cs = connectorState("cal", "Google Calendar");
     if (S.cal.status === "ok" || (S.cal.status === "stale" && S.cal.items.length)) {
-      const groups = {};
-      S.cal.items.forEach((ev) => { const { d } = eventStart(ev); if (!d) return; (groups[dkey(d)] = groups[dkey(d)] || []).push(ev); });
-      const keys = Object.keys(groups).sort();
-      $("#calBox").innerHTML = (S.cal.status === "stale" ? cs : "") + (keys.length ? keys.map((k) => {
-        const d = new Date(k + "T00:00:00");
-        const head = k === TODAY ? "Heute" : k === dkey(addDays(NOW, 1)) ? "Morgen" : d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "short" });
-        return `<div class="stack" style="gap:2px"><span class="label">${esc(head)}</span><ul class="list">${groups[k].map((ev) => { const s = eventStart(ev); return `<li><span class="num small muted" style="width:46px;flex:none">${s.allDay ? "ganzt." : timeStr(s.d)}</span><span class="grow">${ev.htmlLink ? `<a href="${esc(ev.htmlLink)}" target="_blank" rel="noopener">${esc(ev.summary || "Ohne Titel")}</a>` : esc(ev.summary || "Ohne Titel")}${ev.location && !/^https?:/.test(ev.location) ? `<span class="small muted"> · ${esc(ev.location)}</span>` : ""}</span></li>`; }).join("")}</ul></div>`;
-      }).join("") : `<p class="empty">Keine Termine in den nächsten 7 Tagen.</p>`);
-    } else $("#calBox").innerHTML = cs;
+      const days = Array.from({ length: 7 }, (_, i) => dkey(addDays(NOW, i)));
+      if (!days.includes(S.calDay)) S.calDay = TODAY;
+      const week = `<div class="cal-week" role="tablist" aria-label="Tage">${days.map((k) => {
+        const d = new Date(k + "T00:00:00"), n = eventsOn(k).length;
+        return `<button type="button" role="tab" class="cal-day ${k === TODAY ? "today" : ""} ${k === S.calDay ? "sel" : ""}" data-cal-day="${k}" aria-selected="${k === S.calDay}" aria-label="${esc(d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" }))}, ${n} Termine"><span class="wd">${WD_SHORT[wdIdx(d)]}</span><span class="dn">${d.getDate()}</span><span class="cal-dots">${"<i></i>".repeat(Math.min(n, 3))}</span></button>`;
+      }).join("")}</div>`;
+      const sel = new Date(S.calDay + "T00:00:00");
+      const head = S.calDay === TODAY ? "Heute" : S.calDay === dkey(addDays(NOW, 1)) ? "Morgen" : sel.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
+      const evs = eventsOn(S.calDay), now = new Date();
+      const list = evs.length ? `<div class="ev-list">${evs.map((ev, i) => {
+        const t = eventTimes(ev), past = !t.allDay && t.end && t.end < now, live = !t.allDay && t.start <= now && t.end && t.end > now;
+        const where = ev.location && !/^https?:/i.test(ev.location) ? ev.location : "";
+        return `<button type="button" class="ev ${past ? "past" : ""}" data-ev="${i}"><span class="bar-c" style="background:${colorFor(ev.summary)}"></span><span class="ev-main"><span class="ev-title">${esc(ev.summary || "Ohne Titel")}</span><span class="ev-sub">${esc(t.label)}${where ? " · " + esc(where) : ""}</span></span><span class="ev-side">${live ? '<span class="pill good">Jetzt</span>' : ""}${meetingLink(ev) ? "<span>Online</span>" : ""}</span></button>`;
+      }).join("")}</div>` : `<p class="empty">Keine Termine an diesem Tag.</p>`;
+      $("#calBox").innerHTML = (S.cal.status === "stale" ? cs : "") + `<div class="stack">${week}<span class="cal-dayhead">${esc(head)}</span>${list}</div>`;
+      const nToday = eventsOn(TODAY).length;
+      $("#calCount").hidden = !nToday; $("#calCount").textContent = `${nToday} heute`;
+    } else { $("#calBox").innerHTML = cs; $("#calCount").hidden = true; }
+
+    // notion
+    if (S.notion.status === "ok") S.notion.items.forEach((p) => { if (!notionCache.has(p.url)) queueMicrotask(() => loadNotion(p)); });
+    const nsx = connectorState("notion", "Notion");
+    if (S.notion.status === "ok" || (S.notion.status === "stale" && S.notion.items.length)) {
+      $("#notionBox").innerHTML = (S.notion.status === "stale" ? nsx : "") + (S.notion.items.length ? `<div class="mail-list">${S.notion.items.map((p, i) => {
+        const c = notionCache.get(p.url), pg = c && c.status === "ok" ? c : null;
+        const snip = pg ? (pg.preview || "Leere Seite") : c && c.status === "error" ? "Vorschau nicht verfügbar" : "Lade Vorschau …";
+        return `<button type="button" class="mail-row" data-notion="${i}">${notionIcon(pg ? pg.emoji : p.emoji, p.title)}<span class="mail-main"><span class="mail-from" style="font-weight:600">${esc(p.title || "Ohne Titel")}</span><span class="mail-snip">${esc(snip)}</span></span><span class="mail-time">${pg && pg.edited ? esc(mailTime(pg.edited)) : p.type === "database" ? "Datenbank" : ""}</span></button>`;
+      }).join("")}</div>` : `<p class="empty">Noch keine zuletzt angesehenen Notion-Seiten.</p>`);
+    } else $("#notionBox").innerHTML = nsx;
 
     // mail
     const ms = connectorState("mail", "Gmail");
@@ -912,12 +974,6 @@ body.noscroll { overflow: hidden; }
       return `<div class="col"><div class="row spread"><span class="label">${label}</span><span class="pill num">${items.length}</span></div>${items.map((c) => `<div class="kcard"><span>${esc(c.title)}</span><div class="row spread small muted"><span>${esc(c.platform || "")}${c.due ? " · " + new Date(c.due + "T00:00:00").toLocaleDateString("de-DE", { day: "numeric", month: "short" }) : ""}</span><span class="row" style="gap:2px">${si > 0 ? `<button class="btn ghost" data-c-move="${esc(c.id)}" data-d="-1" aria-label="Zurück">‹</button>` : ""}${si < 3 ? `<button class="btn ghost" data-c-move="${esc(c.id)}" data-d="1" aria-label="Weiter">›</button>` : ""}<button class="btn ghost" data-c-del="${esc(c.id)}" aria-label="Löschen">✕</button></span></div></div>`).join("") || `<span class="small muted">leer</span>`}</div>`;
     }).join("");
 
-    $("#notionLabel").textContent = `Seiten zu „${S.config.notionQuery || "Content"}“`;
-    setIfIdle("#notionQ", S.config.notionQuery || "");
-    const ns = connectorState("notion", "Notion");
-    if (S.notion.status === "ok" || (S.notion.status === "stale" && S.notion.items.length)) {
-      $("#notionBox").innerHTML = (S.notion.status === "stale" ? ns : "") + (S.notion.items.length ? `<ul class="list">${S.notion.items.map((r) => `<li><span class="grow"><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title || "Ohne Titel")}</a></span><span class="small muted num">${r.timestamp ? new Date(r.timestamp).toLocaleDateString("de-DE") : ""}</span></li>`).join("")}</ul>` : `<p class="empty">Keine Notion-Seiten zu diesem Suchbegriff gefunden.</p>`);
-    } else $("#notionBox").innerHTML = ns;
   }
 
   function weekStats() {
@@ -1058,7 +1114,6 @@ body.noscroll { overflow: hidden; }
   $("#examForm").addEventListener("submit", (e) => { e.preventDefault(); const id = uid(), body = { title: $("#examTitle").value.trim(), type: $("#examType").value, date: $("#examDate").value }; if (!body.title || !body.date) return; S.exams.push({ id, ...body }); render(); saveDoc("exams/" + id, body, 0); e.target.reset(); });
   $("#schedForm").addEventListener("submit", (e) => { e.preventDefault(); const id = uid(), body = { day: +$("#sDay").value, start: $("#sStart").value, end: $("#sEnd").value, title: $("#sTitle").value.trim(), room: $("#sRoom").value.trim() }; if (!body.title || !body.start) return; S.schedule.push({ id, ...body }); render(); saveDoc("schedule/" + id, body, 0); $("#sTitle").value = ""; $("#sRoom").value = ""; });
   $("#contentForm").addEventListener("submit", (e) => { e.preventDefault(); const id = uid(), body = { title: $("#cTitle").value.trim(), platform: $("#cPlatform").value, due: $("#cDue").value || null, stage: "idea", created: TODAY }; if (!body.title) return; S.content.push({ id, ...body }); render(); saveDoc("content/" + id, body, 0); $("#cTitle").value = ""; $("#cDue").value = ""; });
-  $("#notionForm").addEventListener("submit", (e) => { e.preventDefault(); const q = $("#notionQ").value.trim() || "Content"; patchConfig((c) => { c.notionQuery = q; }); watchNotion(); });
 
   $("#exportBtn").addEventListener("click", () => {
     if (!S.db || !S.db.local) return;
@@ -1085,6 +1140,7 @@ body.noscroll { overflow: hidden; }
       gesundheit_heute: { wasser_ml: d.water || 0, protein_g: d.protein || 0, schritte: d.steps ?? null, schlaf_h: d.sleep ?? null, aufgestanden: d.wake ?? null, ziele: S.config.targets, training_geplant: planToday() || "Ruhetag", training_erledigt: !!d.workout },
       trainingsplan_woche: S.plan,
       termine_7_tage: S.cal.status === "ok" ? S.cal.items.map((ev) => { const s = eventStart(ev); return { titel: ev.summary, start: s.d ? (s.allDay ? dkey(s.d) : s.d.toLocaleString("de-DE")) : null }; }) : "nicht verfügbar",
+      notion_seiten: S.notion.status === "ok" ? S.notion.items.map((p) => { const c = notionCache.get(p.url); return { titel: p.title, vorschau: c && c.preview ? c.preview : null }; }) : "nicht verfügbar",
       neueste_mails: S.mail.status === "ok" ? S.mail.items.map((m) => ({ betreff: m.subject, von: m.from, vorschau: m.snippet, ungelesen: m.unread })) : "nicht verfügbar",
       pruefungen_deadlines: upcomingExams().map((e) => ({ titel: e.title, art: e.type, datum: e.date, tage_bis: daysUntil(e.date) })),
       stundenplan_heute: todaysClasses().map((s) => `${s.start} ${s.title}`),
@@ -1187,9 +1243,9 @@ body.noscroll { overflow: hidden; }
   }
   // ---------- Gmail reader ----------
   const AV_COLORS = ["var(--accent)", "var(--good)", "var(--warn)", "var(--bad)", "var(--muted)"];
-  function avatar(name) {
+  function avatar(name, square) {
     const n = String(name || "?"); let h = 0; for (const c of n) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-    return `<span class="avatar" aria-hidden="true" style="background:${AV_COLORS[h % AV_COLORS.length]}">${esc((n.match(/[A-Za-zÀ-ÿ0-9]/) || ["?"])[0].toUpperCase())}</span>`;
+    return `<span class="avatar" aria-hidden="true" style="${square ? "border-radius:8px;" : ""}background:${AV_COLORS[h % AV_COLORS.length]}">${esc((n.match(/[A-Za-zÀ-ÿ0-9]/) || ["?"])[0].toUpperCase())}</span>`;
   }
   function mailTime(iso) {
     if (!iso) return ""; const d = new Date(iso); if (isNaN(d)) return "";
@@ -1203,26 +1259,37 @@ body.noscroll { overflow: hidden; }
     return h;
   }
   const threadCache = new Map();
-  let rdIdx = -1, rdReturn = null, rdSeq = 0;
-  function openReader(i) {
-    if (!S.mail.items[i]) return;
-    if (rdIdx < 0) rdReturn = document.activeElement;
-    rdIdx = i; $("#readerBack").hidden = false; document.body.classList.add("noscroll");
-    renderReader(); $("#rdClose").focus(); loadThread(i);
+  const notionCache = new Map();
+  const RD_OPEN = { mail: "In Gmail öffnen", notion: "In Notion öffnen", event: "In Google Kalender öffnen" };
+  const rd = { kind: null, idx: -1, ret: null, seq: 0 };
+  const rdList = () => rd.kind === "mail" ? S.mail.items : rd.kind === "notion" ? S.notion.items : rd.kind === "event" ? eventsOn(S.calDay) : [];
+  function openReader(kind, i) {
+    const list = kind === "mail" ? S.mail.items : kind === "notion" ? S.notion.items : eventsOn(S.calDay);
+    if (!list[i]) return;
+    if (rd.idx < 0) rd.ret = document.activeElement;
+    rd.kind = kind; rd.idx = i; $("#readerBack").hidden = false; document.body.classList.add("noscroll");
+    renderReader(); $("#rdScroll").scrollTop = 0; $("#rdClose").focus();
+    if (kind === "mail") loadThread(i); else if (kind === "notion") loadNotion(list[i]);
   }
   function closeReader() {
-    rdIdx = -1; $("#readerBack").hidden = true; document.body.classList.remove("noscroll");
-    if (rdReturn && rdReturn.focus) rdReturn.focus(); rdReturn = null;
+    rd.idx = -1; rd.kind = null; $("#readerBack").hidden = true; document.body.classList.remove("noscroll");
+    if (rd.ret && rd.ret.focus && document.contains(rd.ret)) rd.ret.focus(); rd.ret = null;
   }
+  const skeleton = `<div class="skel" style="width:80%"></div><div class="skel" style="width:65%"></div><div class="skel" style="width:72%"></div>`;
   function renderReader() {
-    const m = S.mail.items[rdIdx]; if (!m) return closeReader();
-    const n = S.mail.items.length;
-    $("#rdCount").textContent = `${rdIdx + 1} von ${n}`;
-    $("#rdPrev").disabled = rdIdx === 0; $("#rdNext").disabled = rdIdx >= n - 1;
+    const list = rdList(), item = list[rd.idx]; if (!item) return closeReader();
+    $("#rdCount").textContent = `${rd.idx + 1} von ${list.length}`;
+    $("#rdPrev").disabled = rd.idx === 0; $("#rdNext").disabled = rd.idx >= list.length - 1;
+    $("#rdOpen").innerHTML = `<span class="lg">${RD_OPEN[rd.kind]}</span><span class="sh">Öffnen</span>`; $("#rdOpen").setAttribute("aria-label", RD_OPEN[rd.kind]);
+    if (rd.kind === "mail") renderMailReader(item);
+    else if (rd.kind === "notion") renderNotionReader(item);
+    else renderEventReader(item);
+  }
+  function renderMailReader(m) {
     $("#rdOpen").href = m.url; $("#readerSubj").textContent = m.subject;
     const st = threadCache.get(m.threadId);
     if (!st || st.status === "loading") {
-      $("#rdBody").innerHTML = `<div class="msg-card"><div class="msg-head">${avatar(m.from)}<span class="msg-meta"><strong>${esc(m.from)}</strong><span>${esc(mailTime(m.date))}</span></span></div><p class="msg-snip">${esc(m.snippet)}</p><div class="skel" style="width:80%"></div><div class="skel" style="width:65%"></div><div class="skel" style="width:72%"></div></div>`;
+      $("#rdBody").innerHTML = `<div class="msg-card"><div class="msg-head">${avatar(m.from)}<span class="msg-meta"><strong>${esc(m.from)}</strong><span>${esc(mailTime(m.date))}</span></span></div><p class="msg-snip">${esc(m.snippet)}</p>${skeleton}</div>`;
     } else if (st.status === "error") {
       $("#rdBody").innerHTML = `<div class="notice warn">${esc(mcpErrCopy(st.error || {}, "Gmail").text)}</div><p class="msg-snip" style="margin:12px 0 0">${esc(m.snippet)}</p>`;
     } else {
@@ -1235,32 +1302,159 @@ body.noscroll { overflow: hidden; }
       }).join("");
     }
   }
+  function renderNotionReader(p) {
+    $("#rdOpen").href = safeUrl(p.url) || "https://www.notion.so";
+    const c = notionCache.get(p.url);
+    $("#readerSubj").textContent = ((c && c.emoji) || p.emoji ? ((c && c.emoji) || p.emoji) + " " : "") + (p.title || "Ohne Titel");
+    if (!c || c.status === "loading") $("#rdBody").innerHTML = `<div style="margin-left:-48px">${skeleton}</div>`;
+    else if (c.status === "error") $("#rdBody").innerHTML = `<div class="notice warn">${esc(mcpErrCopy(c.error || {}, "Notion").text)}</div>`;
+    else $("#rdBody").innerHTML = `${c.edited ? `<p class="small muted" style="margin:-6px 0 14px">Zuletzt bearbeitet ${esc(new Date(c.edited).toLocaleString("de-DE", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }))}</p>` : ""}<div class="md">${mdToHtml(c.md) || '<p class="muted">Diese Seite ist leer.</p>'}</div>`;
+  }
+  function renderEventReader(ev) {
+    $("#rdOpen").href = safeUrl(ev.htmlLink) || "https://calendar.google.com";
+    $("#readerSubj").innerHTML = `<span style="display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:10px;vertical-align:middle;background:${colorFor(ev.summary)}"></span>${esc(ev.summary || "Ohne Titel")}`;
+    const t = eventTimes(ev), meet = meetingLink(ev);
+    const dateStr = t.start ? t.start.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "";
+    const dur = !t.allDay && t.end ? Math.round((t.end - t.start) / 60000) : 0;
+    const durStr = dur ? (dur >= 60 ? `${Math.floor(dur / 60)} Std.${dur % 60 ? " " + (dur % 60) + " Min." : ""}` : `${dur} Min.`) : "";
+    const rows = [];
+    rows.push(["Wann", `${esc(dateStr)}<br><span class="num">${esc(t.label)}</span>${durStr ? ` <span class="muted">· ${esc(durStr)}</span>` : ""}`]);
+    if (ev.location) rows.push(["Wo", mailBodyHtml(ev.location)]);
+    if (meet) rows.push(["Online", `<a class="btn primary" href="${esc(meet)}" target="_blank" rel="noopener">Meeting beitreten</a>`]);
+    const desc = htmlToText(ev.description || "");
+    if (desc) rows.push(["Details", `<div class="msg-body">${mailBodyHtml(desc)}</div>`]);
+    const att = (ev.attendees || []).filter((a) => !a.resource);
+    if (att.length) {
+      const st = { accepted: ["good", "Zugesagt"], declined: ["bad", "Abgesagt"], tentative: ["warn", "Vielleicht"], needsAction: ["", "Offen"] };
+      rows.push(["Gäste", att.map((a) => { const s2 = st[a.responseStatus] || st.needsAction, nm = a.displayName || a.email || ""; return `<div class="att">${avatar(nm)}<span class="grow" style="min-width:0;overflow-wrap:anywhere">${esc(nm)}${a.self ? ' <span class="muted">(du)</span>' : ""}${a.organizer ? ' <span class="muted">· Organisator</span>' : ""}</span><span class="pill ${s2[0]}">${s2[1]}</span></div>`; }).join("")]);
+    }
+    const org = ev.organizer && !ev.organizer.self ? (ev.organizer.displayName || ev.organizer.email) : "";
+    if (org && !att.some((a) => a.organizer)) rows.push(["Organisator", esc(org)]);
+    $("#rdBody").innerHTML = `<dl class="ev-detail">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
+  }
   async function loadThread(i) {
     const m = S.mail.items[i]; if (!m || !S.mcp || !m.threadId) return;
     const cur = threadCache.get(m.threadId); if (cur && cur.status !== "error") return;
-    threadCache.set(m.threadId, { status: "loading" }); const seq = ++rdSeq;
+    threadCache.set(m.threadId, { status: "loading" });
     try {
       const r = await S.mcp.callTool("Gmail", "get_thread", { threadId: m.threadId, messageFormat: "PLAIN_TEXT" }, { cache: { staleTime: 300000 } });
       const msgs = ((r && r.payload && r.payload.messages) || []).slice().sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
       threadCache.set(m.threadId, { status: "ok", messages: msgs, open: new Set() });
     } catch (e) { threadCache.set(m.threadId, { status: "error", error: e }); }
-    if (rdIdx >= 0 && S.mail.items[rdIdx] && S.mail.items[rdIdx].threadId === m.threadId) { renderReader(); if (seq === rdSeq) $("#rdScroll").scrollTop = 0; }
+    if (rd.kind === "mail" && rdList()[rd.idx] && rdList()[rd.idx].threadId === m.threadId) renderReader();
   }
-  $("#mailBox").addEventListener("click", (e) => { const b = e.target.closest("[data-mail]"); if (b) openReader(+b.dataset.mail); });
+  async function loadNotion(p) {
+    if (!p || !S.mcp || !p.url) return;
+    const cur = notionCache.get(p.url); if (cur && cur.status !== "error") return;
+    notionCache.set(p.url, { status: "loading" });
+    try {
+      const r = await S.mcp.callTool("Notion", "notion-fetch", { id: p.url }, { cache: { staleTime: 300000 } });
+      const pl = (r && r.payload) || {};
+      const text = typeof pl === "string" ? pl : String(pl.text || "");
+      const m = text.match(/<content>([\s\S]*?)<\/content>/);
+      const md = (m ? m[1] : text.replace(/^Here is the result[^\n]*\n/, "")).trim();
+      const emoji = pl.icon && pl.icon.type === "emoji" ? pl.icon.emoji : "";
+      notionCache.set(p.url, { status: "ok", md, emoji, edited: pl.page_last_edited_at || null, preview: mdPreview(md) });
+    } catch (e) { notionCache.set(p.url, { status: "error", error: e }); }
+    renderToday();
+    if (rd.kind === "notion" && rdList()[rd.idx] && rdList()[rd.idx].url === p.url) renderReader();
+  }
+
+  // ---------- helpers for calendar & notion ----------
+  function safeUrl(u) { u = String(u || "").trim(); return /^https?:\/\//i.test(u) ? u : null; }
+  function colorFor(name) { const n = String(name || "?"); let h = 7; for (const c of n) h = (h * 31 + c.charCodeAt(0)) >>> 0; return AV_COLORS[h % 4]; }
+  function eventTimes(ev) {
+    const s = ev.start || {}, e = ev.end || {};
+    if (s.date && !s.dateTime) return { allDay: true, start: new Date(s.date + "T00:00:00"), end: e.date ? new Date(e.date + "T00:00:00") : null, label: "Ganztägig" };
+    const st = s.dateTime ? new Date(s.dateTime) : null, en = e.dateTime ? new Date(e.dateTime) : null;
+    return { allDay: false, start: st, end: en, label: st ? `${timeStr(st)}${en ? "–" + timeStr(en) : ""}` : "" };
+  }
+  function eventsOn(k) {
+    const d0 = new Date(k + "T00:00:00"), d1 = addDays(d0, 1);
+    return S.cal.items.filter((ev) => { const t = eventTimes(ev); if (!t.start) return false; const end = t.end && t.end > t.start ? t.end : new Date(+t.start + 1); return t.start < d1 && end > d0; })
+      .sort((a, b) => { const ta = eventTimes(a), tb = eventTimes(b); return (tb.allDay - ta.allDay) || (ta.start - tb.start); });
+  }
+  function meetingLink(ev) {
+    if (safeUrl(ev.hangoutLink)) return ev.hangoutLink;
+    const ep = ((ev.conferenceData || {}).entryPoints || []).find((x) => x.entryPointType === "video" && safeUrl(x.uri)); if (ep) return ep.uri;
+    const hay = `${ev.location || ""} ${ev.description || ""}`;
+    const m = hay.match(/https:\/\/[^\s"'<>]*(zoom\.us|meet\.google\.com|teams\.microsoft\.com|teams\.live\.com)[^\s"'<>]*/i);
+    return m ? m[0].replace(/&amp;/g, "&") : null;
+  }
+  function htmlToText(html) {
+    if (!/[<&]/.test(html)) return html;
+    try {
+      const doc = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
+      doc.querySelectorAll("script,style").forEach((n) => n.remove());
+      doc.querySelectorAll("a[href]").forEach((a) => { const h = a.getAttribute("href"); if (safeUrl(h) && a.textContent.trim() !== h) a.textContent = `${a.textContent.trim()} ${h}`; });
+      doc.querySelectorAll("br").forEach((n) => n.replaceWith("\n"));
+      doc.querySelectorAll("p,div,li,h1,h2,h3,tr").forEach((n) => n.append("\n"));
+      return doc.body.textContent.replace(/\n{3,}/g, "\n\n").trim();
+    } catch (e) { return html.replace(/<[^>]+>/g, " "); }
+  }
+  function notionIcon(emoji, title) {
+    if (emoji) return `<span class="nicon" aria-hidden="true">${esc(emoji)}</span>`;
+    return avatar(title, true);
+  }
+  function mdPreview(md) {
+    return String(md || "").replace(/<(database|page)[^>]*>([\s\S]*?)<\/\1>/g, "$2").replace(/<[^>]+>/g, " ")
+      .replace(/^\s*(#{1,6}|>|[-*+]\s+\[[ xX]\]|[-*+]|\d+\.)\s*/gm, "").replace(/\*\*|__|`|\*/g, "").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+      .replace(/^-{3,}$/gm, "").replace(/\s+/g, " ").trim().slice(0, 220);
+  }
+  function mdInline(raw, tokens) {
+    const tok = (html) => `\u0000${tokens.push(html) - 1}\u0000`;
+    let t = raw.replace(/<(database|page)\b[^>]*?url="([^"]+)"[^>]*>([\s\S]*?)<\/\1>/g, (_, kind, url, name) => tok(safeUrl(url) ? `<a class="chip-link" href="${esc(url)}" target="_blank" rel="noopener">${esc(name.replace(/<[^>]+>/g, "") || (kind === "database" ? "Datenbank" : "Seite"))}</a>` : esc(name)));
+    t = t.replace(/<\/?[a-zA-Z][^>]*>/g, "");
+    t = t.replace(/`([^`]+)`/g, (_, c) => tok(`<code>${esc(c)}</code>`));
+    t = t.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => tok(safeUrl(url) ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a>` : esc(label)));
+    t = t.replace(/https?:\/\/[^\s<>()]+[^\s<>().,;:!?]/g, (u) => tok(`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.length > 60 ? u.slice(0, 57) + "…" : u)}</a>`));
+    t = esc(t);
+    t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>");
+    return t;
+  }
+  function mdToHtml(md) {
+    const tokens = [], out = []; let list = null;
+    const closeList = () => { if (list) { out.push(`</${list}>`); list = null; } };
+    const lines = String(md || "").replace(/\r/g, "").split("\n");
+    let para = [];
+    const flush = () => { if (para.length) { out.push(`<p>${para.map((l) => mdInline(l, tokens)).join("<br>")}</p>`); para = []; } };
+    for (const line of lines) {
+      const l = line.replace(/\t/g, "  ");
+      let m;
+      if (!l.trim()) { flush(); closeList(); continue; }
+      if ((m = l.match(/^\s*(#{1,3})\s+(.*)$/))) { flush(); closeList(); const n = m[1].length; out.push(`<h${n}>${mdInline(m[2], tokens)}</h${n}>`); continue; }
+      if (/^\s*(-{3,}|\*{3,})\s*$/.test(l)) { flush(); closeList(); out.push("<hr>"); continue; }
+      if ((m = l.match(/^\s*>\s?(.*)$/))) { flush(); closeList(); out.push(`<blockquote>${mdInline(m[1], tokens)}</blockquote>`); continue; }
+      if ((m = l.match(/^\s*[-*+]\s+\[([ xX])\]\s+(.*)$/))) { flush(); if (list !== "ul") { closeList(); out.push("<ul>"); list = "ul"; } out.push(`<li class="task"><input type="checkbox" disabled ${m[1] !== " " ? "checked" : ""} aria-label="Aufgabe"><span>${mdInline(m[2], tokens)}</span></li>`); continue; }
+      if ((m = l.match(/^\s*[-*+]\s+(.*)$/))) { flush(); if (list !== "ul") { closeList(); out.push("<ul>"); list = "ul"; } out.push(`<li>${mdInline(m[1], tokens)}</li>`); continue; }
+      if ((m = l.match(/^\s*\d+[.)]\s+(.*)$/))) { flush(); if (list !== "ol") { closeList(); out.push("<ol>"); list = "ol"; } out.push(`<li>${mdInline(m[1], tokens)}</li>`); continue; }
+      closeList(); para.push(l.trim());
+    }
+    flush(); closeList();
+    return out.join("").replace(/\u0000(\d+)\u0000/g, (_, i) => tokens[+i]);
+  }
+
+  // ---------- reader events ----------
+  $("#mailBox").addEventListener("click", (e) => { const b = e.target.closest("[data-mail]"); if (b) openReader("mail", +b.dataset.mail); });
+  $("#notionBox").addEventListener("click", (e) => { const b = e.target.closest("[data-notion]"); if (b) openReader("notion", +b.dataset.notion); });
+  $("#calBox").addEventListener("click", (e) => {
+    const d = e.target.closest("[data-cal-day]"); if (d) { S.calDay = d.dataset.calDay; try { sessionStorage.setItem("jarvis.calDay", S.calDay); } catch (err) {} renderToday(); const nb = document.querySelector(`[data-cal-day="${S.calDay}"]`); if (nb) nb.focus(); return; }
+    const b = e.target.closest("[data-ev]"); if (b) openReader("event", +b.dataset.ev);
+  });
   $("#rdClose").addEventListener("click", closeReader);
-  $("#rdPrev").addEventListener("click", () => { if (rdIdx > 0) openReader(rdIdx - 1); });
-  $("#rdNext").addEventListener("click", () => { if (rdIdx < S.mail.items.length - 1) openReader(rdIdx + 1); });
+  $("#rdPrev").addEventListener("click", () => { if (rd.idx > 0) openReader(rd.kind, rd.idx - 1); });
+  $("#rdNext").addEventListener("click", () => { if (rd.idx < rdList().length - 1) openReader(rd.kind, rd.idx + 1); });
   $("#readerBack").addEventListener("click", (e) => { if (e.target.id === "readerBack") closeReader(); });
   $("#rdBody").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-rd-toggle]"); if (!b) return;
-    const st = threadCache.get(S.mail.items[rdIdx].threadId); if (!st || !st.open) return;
+    const b = e.target.closest("[data-rd-toggle]"); if (!b || rd.kind !== "mail") return;
+    const st = threadCache.get(rdList()[rd.idx].threadId); if (!st || !st.open) return;
     const j = +b.dataset.rdToggle; st.open.has(j) ? st.open.delete(j) : st.open.add(j); renderReader();
   });
   document.addEventListener("keydown", (e) => {
-    if (rdIdx < 0) return;
+    if (rd.idx < 0) return;
     if (e.key === "Escape") { e.preventDefault(); closeReader(); }
-    else if (e.key === "ArrowLeft" && rdIdx > 0) openReader(rdIdx - 1);
-    else if (e.key === "ArrowRight" && rdIdx < S.mail.items.length - 1) openReader(rdIdx + 1);
+    else if (e.key === "ArrowLeft" && rd.idx > 0) openReader(rd.kind, rd.idx - 1);
+    else if (e.key === "ArrowRight" && rd.idx < rdList().length - 1) openReader(rd.kind, rd.idx + 1);
     else if (e.key === "Tab") {
       const f = $$("#readerBack button:not([disabled]), #readerBack a[href]"); if (!f.length) return;
       if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
@@ -1272,8 +1466,8 @@ body.noscroll { overflow: hidden; }
     if (!S.mcp) return;
     if (notionUnsub) notionUnsub();
     S.notion = { status: "loading", items: [] }; render();
-    notionUnsub = S.mcp.watchTool("Notion", "notion-search", { query: S.config.notionQuery || "Content", page_size: 8, max_highlight_length: 0 },
-      onWatch("notion", (p) => ({ items: ((p && p.results) || []).map((r) => ({ title: r.title, url: r.url, timestamp: r.timestamp })) })), { refetchInterval: 15 * 60 * 1000 });
+    notionUnsub = S.mcp.watchTool("Notion", "notion-list-recent-pages", { limit: 3 },
+      onWatch("notion", (p) => ({ items: ((p && p.results) || []).slice(0, 3).map((r) => ({ title: r.title, url: r.url, type: r.type, emoji: typeof r.icon === "string" && !/[\/.]/.test(r.icon) ? r.icon : "" })) })), { refetchInterval: 10 * 60 * 1000 });
   }
   async function initMcp() {
     const mcp = await claude.use("mcp");
@@ -1295,10 +1489,8 @@ body.noscroll { overflow: hidden; }
     }, onDbErr);
     db.doc("config/main").onSnapshot((snap) => {
       if (isPending("config/main")) return;
-      const prevQ = S.config.notionQuery;
       if (snap.exists) S.config = { ...structuredClone(DEFAULT_CONFIG), ...snap.data() };
       render();
-      if (S.config.notionQuery !== prevQ) watchNotion();
     }, onDbErr);
     db.collection("days").where("date", ">=", dkey(addDays(NOW, -70))).onSnapshot((snap) => {
       const next = {};
