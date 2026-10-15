@@ -636,7 +636,9 @@ details[open] > summary { margin-bottom: 10px; }
       case "not_in_manifest": return { text: `${name} ist für dieses Dashboard nicht freigegeben.`, perms: true };
       case "blocked_by_policy": case "approval_required": return { text: `${name} ist durch eine Richtlinie deiner Organisation gesperrt.` };
       case "server_unavailable": case "rate_limited": return { text: `${name} antwortet gerade nicht. Jarvis versucht es automatisch erneut.` };
-      case "tool_error": return { text: `${name} hat einen Fehler gemeldet: ${e.message || "unbekannt"}. Verbinde ${name} unter claude.ai → Einstellungen → Connectors neu, falls Berechtigungen fehlen.` };
+      case "tool_error":
+        if (/scope|forbidden|permission/i.test(e.message || "")) return { text: `${name} fehlt die Leseberechtigung. Trenne ${name} unter claude.ai → Einstellungen → Connectors und verbinde es neu. Setze dabei auf dem Google-Bildschirm alle Häkchen.` };
+        return { text: `${name} hat einen Fehler gemeldet: ${e.message || "unbekannt"}. Verbinde ${name} unter claude.ai → Einstellungen → Connectors neu, falls Berechtigungen fehlen.` };
       case "not_granted": case "capability_disabled": case "capability_removed": return { text: `Live-Daten aus ${name} gibt es nur, wenn du das Dashboard angemeldet auf claude.ai öffnest.` };
       default: return { text: `${name} konnte nicht geladen werden (${e.message || e.code}).` };
     }
