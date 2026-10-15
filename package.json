@@ -1,8 +1,15 @@
 {
-  "name": "jarvis-dashboard",
+  "name": "lifeos",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test-api.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.134.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
