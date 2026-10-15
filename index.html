@@ -259,7 +259,7 @@ details[open] > summary { margin-bottom: 10px; }
       </div>
 
       <div class="card s5">
-        <div class="card-head"><h2>Posteingang</h2><span class="small muted">Gmail · ungelesen</span></div>
+        <div class="card-head"><h2>Posteingang</h2><span class="small muted">Gmail · ungelesen, Allgemein</span></div>
         <div id="mailBox"></div>
       </div>
     </div>
@@ -685,7 +685,7 @@ details[open] > summary { margin-bottom: 10px; }
     lines.push(["Habits", `${done} von ${hs.length} erledigt`, done === hs.length && hs.length ? "Alles geschafft" : `${hs.length - done} offen`]);
     const pt = planToday(), dd = day(TODAY);
     lines.push(["Training", pt || "Ruhetag", pt ? (dd.workout ? "Erledigt" : "Noch offen") : "Erholung zählt auch"]);
-    if (S.mail.status === "ok") lines.push(["Mails", `${S.mail.items.length}${S.mail.more ? "+" : ""} ungelesen`, "letzte 7 Tage"]);
+    if (S.mail.status === "ok") lines.push(["Mails", `${S.mail.items.length}${S.mail.more ? "+" : ""} ungelesen`, "Allgemein, letzte 7 Tage"]);
     if (wdIdx(NOW) === 6 && !S.reviews.find((r) => r.week === WEEK_ID)) lines.push(["Sonntag", "Zeit fürs Wochen-Review", "Tab Wochen-Review"]);
     $("#briefLines").innerHTML = lines.map(([l, v, sub]) => `<div class="brief-item"><span class="label">${esc(l)}</span><strong>${esc(v)}</strong>${sub ? `<span class="small muted">${esc(sub)}</span>` : ""}</div>`).join("");
     $("#briefBtn").hidden = !S.sample;
@@ -1110,10 +1110,13 @@ details[open] > summary { margin-bottom: 10px; }
   function parseThreads(p) {
     const arr = (p && (p.threads || p.items || p.results)) || [];
     const items = arr.map((t) => {
-      const m = (t.messages || t.relatedMessages || [])[0] || t;
+      const msgs = t.messages || t.relatedMessages || [];
+      const unread = msgs.filter((x) => (x.labelIds || []).includes("UNREAD"));
+      const m = unread[unread.length - 1] || msgs[msgs.length - 1] || t;
+      const subject = m.subject || (msgs.find((x) => x.subject) || {}).subject || t.subject;
       let from = m.sender || m.from || t.sender || "";
       if (from && typeof from === "object") from = from.name || from.displayName || from.email || from.emailAddress || "";
-      return { subject: m.subject || t.subject || "(kein Betreff)", from: String(from), url: t.viewUrl || m.viewUrl || "https://mail.google.com/mail/u/0/#inbox" };
+      return { subject: subject || "(kein Betreff)", from: String(from), url: t.viewUrl || m.viewUrl || "https://mail.google.com/mail/u/0/#inbox" };
     });
     return { items, more: !!(p && p.nextPageToken) };
   }
@@ -1132,7 +1135,7 @@ details[open] > summary { margin-bottom: 10px; }
     const s0 = startOfDay(NOW);
     mcp.watchTool("Google Calendar", "list_events", { startTime: s0.toISOString(), endTime: addDays(s0, 7).toISOString(), orderBy: "startTime", pageSize: 50 },
       onWatch("cal", (p) => ({ items: ((p && p.events) || []).filter((ev) => ev.status !== "cancelled") })), { refetchInterval: 10 * 60 * 1000 });
-    mcp.watchTool("Gmail", "search_threads", { query: "is:unread in:inbox newer_than:7d", pageSize: 20 }, onWatch("mail", parseThreads), { refetchInterval: 10 * 60 * 1000 });
+    mcp.watchTool("Gmail", "search_threads", { query: "is:unread in:inbox -category:updates -category:promotions -category:social -category:forums newer_than:7d", pageSize: 20 }, onWatch("mail", parseThreads), { refetchInterval: 10 * 60 * 1000 });
     watchNotion();
   }
 
