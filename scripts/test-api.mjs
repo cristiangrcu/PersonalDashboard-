@@ -186,4 +186,13 @@ ok("yazio diary: auth, totals, items, product cache, token reuse");
 const out = await call(session, { method: "DELETE", cookie: C });
 assert.match(cookieFrom(out.res), /^lifeos_s=$/);
 ok("logout clears cookie");
+// database selection: a plain REDIS_URL also counts as configured
+const lib = await import("../api/_lib.js");
+const saved = [process.env.KV_REST_API_URL, process.env.KV_REST_API_TOKEN];
+delete process.env.KV_REST_API_URL; delete process.env.KV_REST_API_TOKEN;
+assert.equal(lib.kvConfigured(), false);
+process.env.REDIS_URL = "redis://example:6379";
+assert.equal(lib.kvConfigured(), true);
+delete process.env.REDIS_URL; [process.env.KV_REST_API_URL, process.env.KV_REST_API_TOKEN] = saved;
+ok("database selection accepts REDIS_URL");
 console.log(`\n${n} test groups passed`);

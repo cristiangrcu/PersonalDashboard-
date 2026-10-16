@@ -27,10 +27,29 @@ export function handle(fn) {
   };
 }
 
-// ---------- Redis (Upstash REST) ----------
-export function kvConfigured() { return !!(kvUrl() && kvToken()); }
+// ---------- Redis: Upstash REST (KV_REST_API_*) or a plain connection string (REDIS_URL) ----------
+const redisUrl = () => env("REDIS_URL") || env("KV_URL");
+const useRest = () => !!(kvUrl() && kvToken());
+export function kvConfigured() { return useRest() || !!redisUrl(); }
+const missingDb = () => new HttpError(503, "setup_required", "Datenbank fehlt: Verbinde unter Storage eine Redis-Datenbank mit dem Projekt.");
+
+let tcpClient = null;
+async function tcp() {
+  if (tcpClient) return tcpClient;
+  tcpClient = (async () => {
+    const { createClient } = await import("redis");
+    const c = createClient({ url: redisUrl(), socket: { connectTimeout: 5000, reconnectStrategy: (retries) => (retries > 3 ? new Error("Redis nicht erreichbar") : 200 * retries) } });
+    c.on("error", (e) => console.error("redis error", e && e.message));
+    await c.connect();
+    return c;
+  })().catch((e) => { tcpClient = null; throw new HttpError(503, "server_unavailable", `Datenbank nicht erreichbar: ${e.message}`); });
+  return tcpClient;
+}
+const tcpSend = async (cmd) => (await tcp()).sendCommand(cmd.map(String));
+
 export async function kv(...cmd) {
-  if (!kvConfigured()) throw new HttpError(503, "setup_required", "Datenbank fehlt: Upstash Redis ist nicht mit dem Projekt verbunden.");
+  if (!kvConfigured()) throw missingDb();
+  if (!useRest()) return tcpSend(cmd);
   const r = await fetch(kvUrl(), { method: "POST", headers: { Authorization: `Bearer ${kvToken()}`, "Content-Type": "application/json" }, body: JSON.stringify(cmd) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok || j.error) throw new Error(`Redis ${cmd[0]} failed: ${j.error || r.status}`);
@@ -38,7 +57,8 @@ export async function kv(...cmd) {
 }
 export async function kvPipeline(cmds) {
   if (!cmds.length) return [];
-  if (!kvConfigured()) throw new HttpError(503, "setup_required", "Datenbank fehlt.");
+  if (!kvConfigured()) throw missingDb();
+  if (!useRest()) return Promise.all(cmds.map(tcpSend)); // node-redis pipelines concurrent commands
   const r = await fetch(kvUrl().replace(/\/$/, "") + "/pipeline", { method: "POST", headers: { Authorization: `Bearer ${kvToken()}`, "Content-Type": "application/json" }, body: JSON.stringify(cmds) });
   const j = await r.json().catch(() => null);
   if (!r.ok || !Array.isArray(j)) throw new Error(`Redis pipeline failed: ${r.status}`);
@@ -63,7 +83,7 @@ export function setCookie(res, name, value, maxAgeSec) {
 }
 function sessionKey() {
   // Derived server-side so no extra secret has to be handled by hand; changing the password ends all sessions.
-  return env("SESSION_SECRET") || crypto.createHash("sha256").update(`lifeos-session|${kvToken()}|${env("APP_PASSWORD")}`).digest("hex");
+  return env("SESSION_SECRET") || crypto.createHash("sha256").update(`lifeos-session|${kvToken() || redisUrl()}|${env("APP_PASSWORD")}`).digest("hex");
 }
 const b64u = (buf) => Buffer.from(buf).toString("base64url");
 const sign = (payload) => crypto.createHmac("sha256", sessionKey()).update(payload).digest("base64url");

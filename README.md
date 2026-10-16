@@ -30,7 +30,7 @@ Umgebungsvariablen im Vercel-Projekt `lifeos` (Settings → Environment Variable
 
 | Variable | Zweck |
 | --- | --- |
-| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Datenbank. Werden gesetzt, wenn du unter Storage „Upstash Redis“ mit dem Projekt verbindest. |
+| `REDIS_URL` oder `KV_REST_API_URL` + `KV_REST_API_TOKEN` | Datenbank. Wird automatisch gesetzt, wenn du unter Storage eine Redis-Datenbank (z. B. Redis oder Upstash) mit dem Projekt verbindest. |
 | `APP_PASSWORD` | Dein Login-Passwort. Ändern meldet alle Geräte ab. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | OAuth-Client (Webanwendung) aus der Google Cloud Console. Weiterleitungs-URL: `https://lifeos-cristian.vercel.app/api/google/callback`. Gmail API und Calendar API müssen aktiviert sein. |
 | `NOTION_TOKEN` | Schlüssel einer internen Notion-Integration (nur Lesen). Seiten in Notion über „Verbindungen“ mit der Integration teilen. |
