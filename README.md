@@ -35,7 +35,11 @@ Umgebungsvariablen im Vercel-Projekt `lifeos` (Settings → Environment Variable
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | OAuth-Client (Webanwendung) aus der Google Cloud Console. Weiterleitungs-URL: `https://lifeos-cristian.vercel.app/api/google/callback`. Gmail API und Calendar API müssen aktiviert sein. |
 | `NOTION_TOKEN` | Schlüssel einer internen Notion-Integration (nur Lesen). Seiten in Notion über „Verbindungen“ mit der Integration teilen. |
 | `ANTHROPIC_API_KEY` | Optional, für den Jarvis-Chat auf Vercel. |
+| `YAZIO_EMAIL`, `YAZIO_PASSWORD` | Optional: deine Yazio-Zugangsdaten für das Ernährungs-Fenster im Gesundheits-Tab. |
+| `YAZIO_CLIENT_ID`, `YAZIO_CLIENT_SECRET` | Client-Daten der Yazio-App, wie sie die Community-Projekte [juriadams/yazio](https://github.com/juriadams/yazio) und [saganos/yazio_public_api](https://github.com/saganos/yazio_public_api) verwenden. |
 | `APP_URL` | Optional. Feste Basis-URL für die Google-Weiterleitung, falls du eine eigene Domain nutzt. |
+
+**Yazio:** Yazio hat keine offizielle Schnittstelle. LifeOS nutzt die undokumentierte App-Schnittstelle (`yzapi.yazio.com`), nur lesend. Sie kann sich jederzeit ändern; dann zeigt das Ernährungs-Fenster einen Fehler, bis `api/yazio.js` angepasst ist. Die Nutzung ist nicht von Yazio vorgesehen; sie liest nur dein eigenes Tagebuch.
 
 Google und Notion sind nur lesend verbunden. Der Google-Refresh-Token liegt serverseitig in Redis, nie im Browser.
 

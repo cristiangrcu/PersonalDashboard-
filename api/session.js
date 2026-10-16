@@ -35,6 +35,7 @@ export default handle(async (req, res) => {
     google: !googleConfigured() ? "not_configured" : g ? "connected" : "not_connected",
     notion: !!env("NOTION_TOKEN"),
     ai: !!env("ANTHROPIC_API_KEY"),
+    yazio: !!(env("YAZIO_EMAIL") && env("YAZIO_PASSWORD") && env("YAZIO_CLIENT_ID") && env("YAZIO_CLIENT_SECRET")),
     empty: !hasData,
     db: kvConfigured(),
   });

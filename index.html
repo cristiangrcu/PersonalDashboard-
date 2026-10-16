@@ -235,6 +235,25 @@ button.msg-head { cursor: pointer; }
 .msg-snip { font-size: .88rem; color: var(--muted); margin-left: 48px; overflow-wrap: anywhere; }
 .skel { height: 12px; border-radius: 6px; background: var(--surface-2); margin: 8px 0 0 48px; }
 body.noscroll { overflow: hidden; }
+/* Ernährung (Yazio) */
+.yz { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 20px; align-items: center; }
+@media (max-width: 640px) { .yz { grid-template-columns: minmax(0, 1fr); justify-items: center; } .yz > .stack { width: 100%; } }
+.yz-ring { position: relative; width: 160px; height: 160px; }
+.yz-ring svg { width: 160px; height: 160px; transform: rotate(-90deg); }
+.yz-ring .center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; align-content: center; gap: 0; }
+.yz-ring .center .v { font-family: var(--font-data); font-size: 1.6rem; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.yz-macro { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.yz-meals { display: flex; flex-direction: column; }
+.yz-meal { border-top: 1px solid var(--line); }
+.yz-meal summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; color: var(--ink); font-size: .95rem; }
+.yz-meal summary::-webkit-details-marker { display: none; }
+.yz-meal summary > span:first-child::before { content: "›"; color: var(--muted); margin-right: 8px; transition: transform .15s; display: inline-block; }
+.yz-meal[open] summary > span:first-child::before { transform: rotate(90deg); }
+.yz-meal ul { list-style: none; margin: 0 0 10px; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 6px; }
+.yz-meal li { display: flex; justify-content: space-between; gap: 10px; font-size: .88rem; min-width: 0; }
+.yz-meal li span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.yz-nav { display: flex; align-items: center; gap: 4px; }
+.from-app { font-size: .75rem; color: var(--accent); }
 #rdOpen .sh { display: none; }
 @media (max-width: 640px) { #rdOpen .sh { display: inline; } #rdOpen .lg { display: none; } }
 /* Window cards (Kalender, Gmail, Notion) */
@@ -447,6 +466,12 @@ body.noscroll { overflow: hidden; }
             <button class="btn primary" type="submit">Speichern</button>
           </form>
         </details>
+      </div>
+
+      <div class="card s12" id="yzCard">
+        <div class="card-head"><div class="row" style="gap:8px"><h2>Ernährung</h2><span class="small muted">aus Yazio</span></div>
+          <div class="yz-nav"><button class="btn ghost" type="button" data-yz-day="-1" aria-label="Vorheriger Tag">‹</button><span class="small num" id="yzDate"></span><button class="btn ghost" type="button" data-yz-day="1" aria-label="Nächster Tag">›</button></div></div>
+        <div id="yzBox"></div>
       </div>
 
       <div class="card s12">
@@ -689,6 +714,7 @@ body.noscroll { overflow: hidden; }
     config: structuredClone(DEFAULT_CONFIG),
     days: {}, goals: [], plan: {}, month: { month: MONTH, expenses: [], income: [] },
     subs: [], invest: [], exams: [], schedule: [], content: [], reviews: [],
+    yazio: { status: "off", date: null, data: null },
     calDay: (() => { try { return sessionStorage.getItem("jarvis.calDay") || null; } catch (e) { return null; } })(),
     cal: { status: "loading", items: [] }, mail: { status: "loading", items: [] }, notion: { status: "loading", items: [] },
   };
@@ -759,6 +785,8 @@ body.noscroll { overflow: hidden; }
       case "google_not_configured": return { text: "Google ist noch nicht eingerichtet: GOOGLE_CLIENT_ID und GOOGLE_CLIENT_SECRET fehlen in Vercel." };
       case "notion_not_configured": return { text: e.message || "Notion ist noch nicht eingerichtet: NOTION_TOKEN fehlt in Vercel." };
       case "notion_not_shared": return { text: e.message };
+      case "yazio_not_configured": return { text: "Yazio ist noch nicht eingerichtet: YAZIO_EMAIL, YAZIO_PASSWORD, YAZIO_CLIENT_ID und YAZIO_CLIENT_SECRET fehlen in Vercel." };
+      case "yazio_auth_failed": return { text: e.message };
       case "unauthorized": return { text: "Deine Sitzung ist abgelaufen. Melde dich neu an." };
       case "needs_reauth": return { text: `${name} muss neu verbunden werden: claude.ai → Einstellungen → Connectors.` };
       case "server_not_connected": return { text: `${name} ist nicht verbunden. Füge es unter claude.ai → Einstellungen → Connectors hinzu.` };
@@ -879,6 +907,53 @@ body.noscroll { overflow: hidden; }
     $("#mailUnread").hidden = !un; $("#mailUnread").textContent = `${un} ungelesen`;
   }
 
+  const YZ_MEALS = [["breakfast", "Frühstück"], ["lunch", "Mittagessen"], ["dinner", "Abendessen"], ["snack", "Snacks"]];
+  function renderYazio() {
+    const y = S.yazio, box = $("#yzBox");
+    const date = y.date || TODAY;
+    const dd = new Date(date + "T00:00:00");
+    $("#yzDate").textContent = date === TODAY ? "Heute" : dd.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" });
+    $$("[data-yz-day]").forEach((b) => (b.disabled = y.status === "off" || y.status === "setup" || (b.dataset.yzDay === "1" && date >= TODAY)));
+    if (y.status === "off") {
+      box.innerHTML = `<p class="notice">Die Yazio-Verbindung läuft in LifeOS online: <a href="https://lifeos-cristian.vercel.app" target="_blank" rel="noopener">lifeos-cristian.vercel.app</a>.</p>`; return;
+    }
+    if (y.status === "setup") { box.innerHTML = `<p class="notice">${esc(mcpErrCopy({ code: "yazio_not_configured" }, "Yazio").text)}</p>`; return; }
+    if (y.status === "error") { box.innerHTML = `<div class="notice warn">${esc(mcpErrCopy(y.error || {}, "Yazio").text)}</div>`; return; }
+    if (y.status === "loading" || !y.data) { box.innerHTML = `<p class="empty">Lade dein Yazio-Tagebuch …</p>`; return; }
+    const D = y.data, T = D.totals, G = D.goals;
+    const pct = G.kcal ? Math.min(T.kcal / G.kcal, 1) : 0, over = G.kcal && T.kcal > G.kcal;
+    const C = 2 * Math.PI * 70;
+    const left = G.kcal ? G.kcal - T.kcal : null;
+    const macro = (label, v, goal, unit) => { const p = goal ? clamp((v / goal) * 100, 0, 100) : 0; return `<div class="yz-macro"><span class="small">${label}</span><div class="bar ${goal && v > goal * 1.1 ? "warn" : p >= 100 ? "good" : ""}"><span style="width:${p}%"></span></div><span class="num small">${nf(Math.round(v))}${goal ? ` <span class="muted">/ ${nf(goal)} ${unit}</span>` : ` ${unit}`}</span></div>`; };
+    const meals = YZ_MEALS.map(([k, label]) => {
+      const m = D.meals[k] || { kcal: 0, items: [] };
+      return `<details class="yz-meal"><summary><span>${label}${m.items.length ? ` <span class="muted small">· ${m.items.length}</span>` : ""}</span><span class="num small">${nf(Math.round(m.kcal))} kcal</span></summary>${m.items.length ? `<ul>${m.items.map((it) => `<li><span>${esc(it.name)}${it.amount ? ` <span class="muted">· ${esc(it.amount)}</span>` : ""}</span><span class="num muted">${it.kcal != null ? nf(it.kcal) + " kcal" : ""}</span></li>`).join("")}</ul>` : `<p class="small muted" style="margin:0 0 10px 18px">Nichts eingetragen.</p>`}</details>`;
+    }).join("");
+    box.innerHTML = `<div class="yz">
+      <div class="yz-ring" role="img" aria-label="${nf(T.kcal)} von ${nf(G.kcal)} kcal">
+        <svg viewBox="0 0 160 160"><circle cx="80" cy="80" r="70" fill="none" stroke="var(--surface-2)" stroke-width="12"/><circle cx="80" cy="80" r="70" fill="none" stroke="${over ? "var(--warn)" : "var(--accent)"}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(pct * C).toFixed(1)} ${C.toFixed(1)}"/></svg>
+        <div class="center"><span class="v">${nf(T.kcal)}</span><span class="small muted">${G.kcal ? `von ${nf(G.kcal)} kcal` : "kcal"}</span>${left != null ? `<span class="small" style="color:${over ? "var(--warn)" : "var(--muted)"}">${over ? nf(-left) + " drüber" : nf(left) + " übrig"}</span>` : ""}</div>
+      </div>
+      <div class="stack">${macro("Protein", T.protein, G.protein, "g")}${macro("Kohlenhydrate", T.carb, G.carb, "g")}${macro("Fett", T.fat, G.fat, "g")}
+        <div class="row small muted" style="gap:14px">${D.water_ml ? `<span>Wasser <span class="num">${nf(D.water_ml)}</span>${G.water ? ` / ${nf(G.water)}` : ""} ml</span>` : ""}${D.steps ? `<span>Schritte <span class="num">${nf(D.steps)}</span></span>` : ""}${D.activity_kcal ? `<span>Aktivität <span class="num">${nf(D.activity_kcal)}</span> kcal</span>` : ""}</div>
+      </div>
+    </div><div class="yz-meals">${meals}</div>`;
+  }
+  let yzSeq = 0;
+  function loadYazio(date) {
+    if (S.yazio.status === "off" || S.yazio.status === "setup") return;
+    const seq = ++yzSeq, same = S.yazio.date === date && S.yazio.data;
+    S.yazio = { ...S.yazio, date, status: same ? "ok" : "loading", data: same ? S.yazio.data : null };
+    renderHealth();
+    api(`/api/yazio?date=${date}`).then((data) => { if (seq !== yzSeq) return; S.yazio = { status: "ok", date, data }; render(); },
+      (error) => { if (seq !== yzSeq) return; S.yazio = { status: "error", date, data: null, error }; renderHealth(); });
+  }
+  $("#yzCard").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-yz-day]"); if (!b || b.disabled) return;
+    const next = dkey(addDays(new Date((S.yazio.date || TODAY) + "T00:00:00"), +b.dataset.yzDay));
+    if (next <= TODAY) loadYazio(next);
+  });
+
   function renderGoals() {
     const areaPill = { Studium: "accent", Content: "warn", Gesundheit: "good", Finanzen: "", "Persönlich": "" };
     $("#goalList").innerHTML = S.goals.length ? S.goals.slice().sort((a, b) => (a.due || "9").localeCompare(b.due || "9")).map((g) => {
@@ -937,8 +1012,14 @@ body.noscroll { overflow: hidden; }
   function renderHealth() {
     const d = day(TODAY), t = S.config.targets;
     $("#healthDate").textContent = NOW.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
-    $("#waterV").innerHTML = `${nf(d.water || 0)} <span class="small muted">/ ${nf(t.water)} ml</span>`; setBar("#waterBar", d.water || 0, t.water);
-    $("#proteinV").innerHTML = `${nf(d.protein || 0)} <span class="small muted">/ ${nf(t.protein)} g</span>`; setBar("#proteinBar", d.protein || 0, t.protein);
+    const yzToday = S.yazio.status === "ok" && S.yazio.date === TODAY ? S.yazio.data : null;
+    const waterVal = yzToday && yzToday.water_ml ? yzToday.water_ml : d.water || 0;
+    const protVal = yzToday ? Math.round(yzToday.totals.protein) : d.protein || 0;
+    $("#waterV").innerHTML = `${nf(waterVal)} <span class="small muted">/ ${nf(t.water)} ml</span>${yzToday && yzToday.water_ml ? ' <span class="from-app">Yazio</span>' : ""}`; setBar("#waterBar", waterVal, t.water);
+    $("#proteinV").innerHTML = `${nf(protVal)} <span class="small muted">/ ${nf(t.protein)} g</span>${yzToday ? ' <span class="from-app">Yazio</span>' : ""}`; setBar("#proteinBar", protVal, t.protein);
+    $$("[data-water]").forEach((b) => (b.hidden = !!(yzToday && yzToday.water_ml)));
+    $$("[data-protein]").forEach((b) => (b.hidden = !!yzToday));
+    renderYazio();
     setIfIdle("#stepsIn", d.steps); setBar("#stepsBar", +d.steps || 0, t.steps);
     setIfIdle("#sleepIn", d.sleep); setIfIdle("#wakeIn", d.wake); setBar("#sleepBar", +d.sleep || 0, t.sleep);
 
@@ -1176,6 +1257,7 @@ body.noscroll { overflow: hidden; }
       heute: NOW.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" }), uhrzeit: timeStr(new Date()),
       habits_heute: S.config.habits.map((h) => ({ habit: h.label, erledigt: habitDone(TODAY, h.id), streak_tage: streak(h.id) })),
       prioritaeten_heute: d.priorities || [],
+      ernaehrung_yazio_heute: S.yazio.status === "ok" && S.yazio.date === TODAY ? { kalorien: S.yazio.data.totals, ziele: S.yazio.data.goals, mahlzeiten_kcal: Object.fromEntries(Object.entries(S.yazio.data.meals).map(([k, m]) => [k, m.kcal])) } : "nicht verfügbar",
       gesundheit_heute: { wasser_ml: d.water || 0, protein_g: d.protein || 0, schritte: d.steps ?? null, schlaf_h: d.sleep ?? null, aufgestanden: d.wake ?? null, ziele: S.config.targets, training_geplant: planToday() || "Ruhetag", training_erledigt: !!d.workout },
       trainingsplan_woche: S.plan,
       termine_7_tage: S.cal.status === "ok" ? S.cal.items.map((ev) => { const s = eventStart(ev); return { titel: ev.summary, start: s.d ? (s.allDay ? dkey(s.d) : s.d.toLocaleString("de-DE")) : null }; }) : "nicht verfügbar",
@@ -1719,6 +1801,7 @@ body.noscroll { overflow: hidden; }
     $("#connPanel").innerHTML = `<div class="conn-row"><h2>Verbindungen</h2><button class="btn ghost" type="button" data-conn-close>Schließen</button></div>`
       + row("Google (Kalender + Gmail)", g[0], g[1], st.google === "not_configured" ? "GOOGLE_CLIENT_ID und GOOGLE_CLIENT_SECRET in Vercel eintragen." : "Nur Lesen. Du kannst den Zugriff jederzeit in deinem Google-Konto widerrufen.")
       + row("Notion", st.notion ? '<span class="pill good">Eingerichtet</span>' : '<span class="pill">Nicht eingerichtet</span>', "", st.notion ? "LifeOS sieht nur Seiten, die du in Notion mit der Integration teilst." : "NOTION_TOKEN in Vercel eintragen.")
+      + row("Yazio (Ernährung)", st.yazio ? '<span class="pill good">Eingerichtet</span>' : '<span class="pill">Nicht eingerichtet</span>', "", st.yazio ? "Inoffizielle Schnittstelle, nur Lesen." : "YAZIO_EMAIL, YAZIO_PASSWORD, YAZIO_CLIENT_ID und YAZIO_CLIENT_SECRET in Vercel eintragen.")
       + row("Jarvis (KI)", st.ai ? '<span class="pill good">Eingerichtet</span>' : '<span class="pill">Aus</span>', "", st.ai ? "" : "Optional: ANTHROPIC_API_KEY in Vercel eintragen.");
   }
   $("#connBtn").addEventListener("click", () => { const p = $("#connPanel"); p.hidden = !p.hidden; $("#connBtn").setAttribute("aria-expanded", String(!p.hidden)); if (!p.hidden) renderConnPanel(); });
@@ -1755,6 +1838,8 @@ body.noscroll { overflow: hidden; }
     S.sample = j.ai ? httpSample() : null;
     $("#fab").hidden = !S.sample;
     offerImport(j);
+    if (j.yazio) { S.yazio = { status: "loading", date: TODAY, data: null }; loadYazio(TODAY); setInterval(() => { if (!document.hidden && S.yazio.date === TODAY) loadYazio(TODAY); }, 5 * 60 * 1000); }
+    else S.yazio = { status: "setup", date: TODAY, data: null };
     const g = new URLSearchParams(location.search).get("google");
     if (g) {
       toast(g === "connected" ? "Google verbunden" : g === "missing_scope" ? "Bitte setze bei Google alle Häkchen und verbinde erneut." : g === "denied" ? "Google-Verbindung abgebrochen." : "Google-Verbindung fehlgeschlagen.");

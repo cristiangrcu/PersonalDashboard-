@@ -7,6 +7,11 @@ process.env.APP_PASSWORD = "correct horse";
 process.env.GOOGLE_CLIENT_ID = "gid";
 process.env.GOOGLE_CLIENT_SECRET = "gsecret";
 process.env.NOTION_TOKEN = "ntn";
+process.env.YAZIO_EMAIL = "me@x.de";
+process.env.YAZIO_PASSWORD = "ypw";
+process.env.YAZIO_CLIENT_ID = "ycid";
+process.env.YAZIO_CLIENT_SECRET = "ycs";
+let yazioTokenCalls = 0;
 
 // ---------- fake Redis ----------
 const store = new Map(), sets = new Map();
@@ -50,6 +55,12 @@ globalThis.fetch = async (url, init = {}) => {
     { id: "b4", type: "child_database", child_database: { title: "Ideen" } },
   ] });
   if (url.startsWith("https://api.notion.com/v1/pages/")) return json(404, { message: "not found" });
+  if (url === "https://yzapi.yazio.com/v20/oauth/token") { yazioTokenCalls++; const p = new URLSearchParams(init.body); assert.equal(p.get("client_id"), "ycid"); return json(200, { access_token: "yat" + yazioTokenCalls, refresh_token: "yrt", expires_in: 3600 }); }
+  if (url.startsWith("https://yzapi.yazio.com/v20/user/widgets/daily-summary?date=2026-10-15")) { assert.match(init.headers.Authorization, /^Bearer yat/); return json(200, { steps: 4200, water_intake: 1500, activity_energy: 120, goals: { "energy.energy": 2400, "nutrient.protein": 140, "nutrient.carb": 250, "nutrient.fat": 80, water: 2500, "activity.step": 8000 }, units: { unit_energy: "kcal" }, meals: { breakfast: { nutrients: { "energy.energy": 450.4, "nutrient.protein": 30.25, "nutrient.carb": 50, "nutrient.fat": 12 } }, lunch: { nutrients: { "energy.energy": 700, "nutrient.protein": 40, "nutrient.carb": 80, "nutrient.fat": 20 } }, dinner: { nutrients: {} }, snack: { nutrients: { "energy.energy": 100 } } } }); }
+  if (url.startsWith("https://yzapi.yazio.com/v20/user/consumed-items?date=2026-10-15")) return json(200, { products: [{ id: "c1", daytime: "breakfast", product_id: "11111111-1111-1111-1111-111111111111", amount: 200, serving: "portion", serving_quantity: 1 }, { id: "c2", daytime: "lunch", product_id: "22222222-2222-2222-2222-222222222222", amount: 150, serving: null, serving_quantity: null }], recipe_portions: [{ id: "c3", daytime: "dinner", recipe_id: "33333333-3333-3333-3333-333333333333", portion_count: 1 }], simple_products: [{ id: "c4", daytime: "snack", name: "Riegel", nutrients: { "energy.energy": 100, "nutrient.protein": 10 } }] });
+  if (url === "https://yzapi.yazio.com/v20/products/11111111-1111-1111-1111-111111111111") return json(200, { name: "Haferflocken", base_unit: "g", nutrients: { "energy.energy": 3.7, "nutrient.protein": 0.13 } });
+  if (url === "https://yzapi.yazio.com/v20/products/22222222-2222-2222-2222-222222222222") return json(200, { name: "Reis", base_unit: "g", nutrients: { "energy.energy": 1.3, "nutrient.protein": 0.027 } });
+  if (url === "https://yzapi.yazio.com/v20/recipes/33333333-3333-3333-3333-333333333333") return json(200, { name: "Pasta Bolognese" });
   throw new Error("unexpected fetch " + url);
 };
 
@@ -151,6 +162,25 @@ const pg = await call(notion, { cookie: C, query: { op: "fetch", id: rec.json.re
 assert.equal(pg.status, 200, JSON.stringify(pg.json));
 assert.match(pg.json.text, /## Ziele/); assert.match(pg.json.text, /- \[x\] \*\*HTML\*\*/); assert.match(pg.json.text, /\[Link\]\(https:\/\/x\.com\)/); assert.match(pg.json.text, /<database url="https:\/\/www\.notion\.so\/b4">Ideen<\/database>/);
 ok("notion recent pages and markdown conversion");
+
+// yazio
+const yazio = await import("../api/yazio.js");
+assert.equal((await call(yazio, { query: { date: "2026-10-15" } })).status, 401);
+assert.equal((await call(yazio, { cookie: C, query: { date: "15.10.2026" } })).status, 400);
+const yd = await call(yazio, { cookie: C, query: { date: "2026-10-15" } });
+assert.equal(yd.status, 200, JSON.stringify(yd.json));
+assert.deepEqual(yd.json.totals, { kcal: 1250, protein: 70.3, carb: 130, fat: 32 });
+assert.equal(yd.json.goals.kcal, 2400); assert.equal(yd.json.water_ml, 1500);
+assert.deepEqual(yd.json.meals.breakfast.items[0], { name: "Haferflocken", amount: "1 × portion", kcal: 740, protein: 26 });
+assert.equal(yd.json.meals.lunch.items[0].amount, "150 g");
+assert.equal(yd.json.meals.dinner.items[0].name, "Pasta Bolognese");
+assert.equal(yd.json.meals.snack.items[0].kcal, 100);
+const callsBefore = calls.length;
+await call(yazio, { cookie: C, query: { date: "2026-10-15" } });
+assert.ok(!calls.slice(callsBefore).some((u) => u.includes("/products/")), "products should come from cache");
+assert.equal(yazioTokenCalls, 1, "token should be reused");
+assert.equal((await call(session, { cookie: C })).json.yazio, true);
+ok("yazio diary: auth, totals, items, product cache, token reuse");
 
 // logout
 const out = await call(session, { method: "DELETE", cookie: C });
